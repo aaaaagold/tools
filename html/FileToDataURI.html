@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>file to dataURI</title>
+<meta charset="UTF-8">
+<script>
+var NULL=null;
+function z(t,a,i){return "<"+t+" "+a+">"+i+"</"+t+">"}
+var d=document;
+function numDelta(str,delta){return str.replace(/\-?[0-9]*\.?[0-9]*/g,function(m){return m!=""?Number(m)+delta:""})}
+function ge(id){return d.getElementById(id)}
+function ce(tag){return d.createElement(tag)}
+function ct(txt){return d.createTextNode(txt)}
+function sa(o,att,inn){o.setAttribute(att,inn);return o}
+function ac(o,c){o.appendChild(c);return o}
+function ae(o,e,f){
+	if(o.attachEvent) o.attachEvent("on"+e,f);
+	else if(o.addEventListener) o.addEventListener(e,f);
+	else console.log("not support");
+	return o;
+}
+HTMLElement.prototype.ac=function(c){this.appendChild(c);return this;};
+HTMLElement.prototype.sa=function(a,v){this.setAttribute(a,v);return this;};
+HTMLElement.prototype.at=function(t){this.ac(d.createTextNode(t));return this;};
+HTMLElement.prototype.si=function(i){this.innerHTML=i;return this;};
+function scrollx(){return window.scrollX||document.documentElement.scrollLeft}
+function scrolly(){return window.scrollY||document.documentElement.scrollTop}
+</script>
+<style>
+body{background-color:rgba(0,0,0,1);color:rgba(255,255,255,1)}
+div.btn{font-size:16px;width:111px;text-align:center;margin:2px;background-color:rgba(234,234,234,0.25);display:inline-block;}
+div.btn:hover{background-color:rgba(234,234,234,0.5);}
+#msgs{width:100%;margin:2px;border:1px solid white;transform}
+#msgs>div>div{overflow-x:auto;border-bottom:1px solid grey;font-family:monospace;}
+.inline{display:inline;}
+</style>
+<body>
+<br>
+
+<div>
+	<input id="base64-files" type="file" name="ufiles" tabindex="1" multiple>
+	<input id="base64-convert" type="submit" value="convert to base64 encoding">
+</div>
+
+
+<div id="msgs"></div>
+<script>
+const toBase64e={
+'files':ge("base64-files"),
+'convert':ge("base64-convert")
+};
+const m=ge("msgs");
+
+function convert(file,convertType){
+	// only dataURL available now
+	m.insertBefore(ce('div').at("convert to "+convertType+": loading: "+file.name),m.childNodes[0]);
+	let reader = new FileReader();
+	reader.onload = function (e) {
+		let c=e.target.result,t="data:;",tlen=t.length;
+		if(c.slice(0,tlen)==t) c="data:application/octet-stream;"+c.slice(tlen);
+		m.insertBefore(ce('div').ac(ce('div').at(file.name)).ac(ce('div').at(c)).ac(ce('div').at('#')),m.childNodes[0]);
+	};
+	reader.readAsDataURL(file);
+}
+
+toBase64e['convert'].onclick=function(){
+	if(toBase64e.files.files.length==0){ newMsg("convert to base64e: no file to convert"); return; }
+	this.disabled=1;
+	this.fileCounts=toBase64e.files.files.length;
+	for(let x=0;x<toBase64e.files.files.length;x++) convert(toBase64e.files.files[x],"dataURL");
+	this.disabled=0;
+};
+</script>
+</body>
+</html>
