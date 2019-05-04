@@ -63,14 +63,13 @@ function genImage(){
 	if(comma===-1) return;
 	let data=s.slice(comma+1),b64pad=s.slice(-2);
 	let sz=((data.length*3)>>2)-((b64pad[0]==='=')+(b64pad[1]==='='));
-	let pixelsz=parseInt(sz/3)+(0!==sz%3),x=1,w=0,h=0,bytePerRowPix=0,padByteCnt=0,imgdatasz=0,pad="",offset=54,imgdata="",header="BM";
+	let pixelsz=parseInt(sz/3)+(0!==sz%3),x=1,w=0,h=0,bytePerRowPix=0,imgdatasz=0,offset=54,header="BM";
 	for(;x<=sz;x<<=1)
 		;
-	while(x>>=1){ let tmp=(w|x); if(tmp*tmp<pixelsz) w|=x; }
+	while(x>>=1){ let tmp=(w|x); if(tmp*tmp<pixelsz) w=tmp; }
 	++w; w+=(4-(w&3))&3; h+=parseInt(pixelsz/w)+(0!==pixelsz%w);
-	bytePerRowPix+=3*w; padByteCnt+=(4-((bytePerRowPix)&3))&3;
-	pad+="\0".repeat(padByteCnt);
-	imgdatasz=(bytePerRowPix+padByteCnt)*h;
+	bytePerRowPix+=3*w;
+	imgdatasz=bytePerRowPix*h;
 	
 	header+=toBytes4(offset+imgdatasz);
 	header+=toBytes4(0);
@@ -87,7 +86,7 @@ function genImage(){
 	header+=toBytes4(0);
 	header+=toBytes4(0);
 	
-	img.src="data:image/bmp;base64,"+btoa(header)+data;
+	img.src="data:image/bmp;base64,"+btoa(header)+data.replace(/=/g,'')+"A".repeat(parseInt(((imgdatasz-sz)<<2)/3));
 }
 
 function convert(file,convertType){
