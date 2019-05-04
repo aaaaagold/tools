@@ -61,8 +61,8 @@ function genImage(){
 	let s=this.nextElementSibling.innerHTML;
 	let comma=s.indexOf(",");
 	if(comma===-1) return;
-	let data=atob(s.slice(comma+1));
-	let sz=data.length;
+	let data=s.slice(comma+1),b64pad=s.slice(-2);
+	let sz=((data.length*3)>>2)-((b64pad[0]==='=')+(b64pad[1]==='='));
 	let pixelsz=parseInt(sz/3)+(0!==sz%3),x=1,w=0,h=0,bytePerRowPix=0,padByteCnt=0,imgdatasz=0,pad="",offset=54,imgdata="",header="BM";
 	for(;x<=sz;x<<=1)
 		;
@@ -87,14 +87,7 @@ function genImage(){
 	header+=toBytes4(0);
 	header+=toBytes4(0);
 	
-	imgdata+=header;
-	for(let x=0;x!=sz;++x){
-		imgdata+=data[x];
-		//if((x+1)%bytePerRowPix===0) imgdata+=pad; // width aligned, should no paddings
-	}
-	console.log("in_sz",sz,"pixelbytes",pixelsz,"width",w,"height",h,"padByteCnt",padByteCnt,"bitmapWithPad",imgdatasz,"curr",(imgdata.length-header.length));
-	imgdata+="\0".repeat(imgdatasz-(imgdata.length-header.length));
-	img.src="data:image/bmp;base64,"+btoa(imgdata);
+	img.src="data:image/bmp;base64,"+btoa(header)+data;
 }
 
 function convert(file,convertType){
