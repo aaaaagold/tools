@@ -27,29 +27,75 @@ function scrollx(){return window.scrollX||document.documentElement.scrollLeft}
 function scrolly(){return window.scrollY||document.documentElement.scrollTop}
 </script>
 <style>
-body{background-color:rgba(0,0,0,1);color:rgba(255,255,255,1)}
-div.btn{font-size:16px;width:111px;text-align:center;margin:2px;background-color:rgba(234,234,234,0.25);display:inline-block;}
-div.btn:hover{background-color:rgba(234,234,234,0.5);}
+body{position:absolute;width:100%;height:100%;bordor:0px solid white;margin:0px;padding:0px;background-color:rgba(0,0,0,1);color:rgba(255,255,255,1);}
+div.btn{font-size:16px;width:100%;text-align:center;margin:2px;background-color:rgba(234,234,234,0.25);display:inline-block;}
+div.btn:hover{background-color:rgba(234,234,123,0.75);}
 #msgs{width:100%;margin:2px;border:1px solid white;transform}
 #msgs>div>div{overflow-x:auto;border-bottom:1px solid grey;font-family:monospace;}
 .inline{display:inline;}
+#root{position:relative;width:100%;height:100%;}
+#texts{position:absolute;width:49%;height:100%;}
+#img{position:absolute;left:50%;width:50%;height:100%;}
 </style>
+</head>
 <body>
-<br>
-
-<div>
+<div id="root"> 
+<div id="texts"><div>
 	<input id="base64-files" type="file" name="ufiles" tabindex="1" multiple>
 	<input id="base64-convert" type="submit" value="convert to base64 encoding">
+</div><div id="msgs"></div></div>
+<div id="img"><div>bmp-ize (4-byte aligned)</div><img></div>
 </div>
-
-
-<div id="msgs"></div>
 <script>
 const toBase64e={
 'files':ge("base64-files"),
 'convert':ge("base64-convert")
 };
-const m=ge("msgs");
+const m=ge("msgs"),img=ge("img").childNodes[1];
+
+let toBytes4=(n)=>{
+	return String.fromCharCode(n & 0xff, (n >> 8) & 0xff, (n >> 16) & 0xff, (n >> 24) & 0xff);
+}
+
+function genImage(){
+	let s=this.nextElementSibling.innerHTML;
+	let comma=s.indexOf(",");
+	if(comma===-1) return;
+	let data=atob(s.slice(comma+1));
+	let sz=data.length;
+	let pixelsz=parseInt(sz/3)+(0!==sz%3),x=1,w=0,h=0,bytePerRowPix=0,padByteCnt=0,imgdatasz=0,pad="",offset=54,imgdata="",header="BM";
+	for(;x<=sz;x<<=1)
+		;
+	while(x>>=1){ let tmp=(w|x); if(tmp*tmp<pixelsz) w|=x; }
+	++w; w+=(4-(w&3))&3; h+=parseInt(pixelsz/w)+(0!==pixelsz%w);
+	bytePerRowPix+=3*w; padByteCnt+=(4-((bytePerRowPix)&3))&3;
+	pad+="\0".repeat(padByteCnt);
+	imgdatasz=(bytePerRowPix+padByteCnt)*h;
+	
+	header+=toBytes4(offset+imgdatasz);
+	header+=toBytes4(0);
+	header+=toBytes4(offset);
+	header+=toBytes4(40);
+	header+=toBytes4(w);
+	header+=toBytes4(h);
+	header+=String.fromCharCode( 1, 0);
+	header+=String.fromCharCode(24, 0);
+	header+=toBytes4(0);
+	header+=toBytes4(imgdatasz);
+	header+=toBytes4(0); // dpi-h
+	header+=toBytes4(0); // dpi-v
+	header+=toBytes4(0);
+	header+=toBytes4(0);
+	
+	imgdata+=header;
+	for(let x=0;x!=sz;++x){
+		imgdata+=data[x];
+		//if((x+1)%bytePerRowPix===0) imgdata+=pad; // width aligned, should no paddings
+	}
+	console.log("in_sz",sz,"pixelbytes",pixelsz,"width",w,"height",h,"padByteCnt",padByteCnt,"bitmapWithPad",imgdatasz,"curr",(imgdata.length-header.length));
+	imgdata+="\0".repeat(imgdatasz-(imgdata.length-header.length));
+	img.src="data:image/bmp;base64,"+btoa(imgdata);
+}
 
 function convert(file,convertType){
 	// only dataURL available now
@@ -57,14 +103,15 @@ function convert(file,convertType){
 	let reader = new FileReader();
 	reader.onload = function (e) {
 		let c=e.target.result,t="data:;",tlen=t.length;
-		if(c.slice(0,tlen)==t) c="data:application/octet-stream;"+c.slice(tlen);
-		m.insertBefore(ce('div').ac(ce('div').at(file.name)).ac(ce('div').at(c)).ac(ce('div').at('#')),m.childNodes[0]);
+		if(c.slice(0,tlen)===t) c="data:application/octet-stream;"+c.slice(tlen);
+		let btn=ce('div').sa("class","btn").at(file.name); btn.onclick=genImage;
+		m.insertBefore(ce('div').ac(btn).ac(ce('div').at(c)).ac(ce('div').at('#')),m.childNodes[0]);
 	};
 	reader.readAsDataURL(file);
 }
 
 toBase64e['convert'].onclick=function(){
-	if(toBase64e.files.files.length==0){ newMsg("convert to base64e: no file to convert"); return; }
+	if(0===toBase64e.files.files.length){ newMsg("convert to base64e: no file to convert"); return; }
 	this.disabled=1;
 	this.fileCounts=toBase64e.files.files.length;
 	for(let x=0;x<toBase64e.files.files.length;x++) convert(toBase64e.files.files[x],"dataURL");
